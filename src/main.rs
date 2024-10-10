@@ -1,8 +1,22 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
 
-fn run_command(input: &str) {
-    println!("{}: command not found", input.trim())
+// Parse user input command and return some value when command is not exit, or return error when user decide to exit
+fn run_command(input: &str) -> Result<(), i32>{
+    let splits = input.trim().split(' ');
+    match splits.take(1).nth(0) {
+        Some("exit") => {
+            return Err(0);
+        },
+        Some(cmd)  => {
+            println!("{}: command not found", cmd);
+        },
+        None => {
+            // do nothing
+            println!("");
+        }
+    }
+    Ok(())
 }
 
 fn main() {
@@ -15,7 +29,15 @@ fn main() {
         let stdin = io::stdin();
         let mut input = String::new();
         stdin.read_line(&mut input).unwrap();
-        run_command(input.as_ref());
+        match run_command(input.as_ref()) {
+            Ok(_) => {
+                // do nothing
+            },
+            Err(_) => {
+                break
+            }
+
+        };
         print!("$ ");
         io::stdout().flush().unwrap();
     }
