@@ -10,4 +10,9 @@ fn main() {
     let stdin = io::stdin();
     let mut input = String::new();
     stdin.read_line(&mut input).unwrap();
+
+    // strip line breaker from input
+    if let Some(input) = input.strip_suffix("\n") {
+        println!("{}: command not found", input)
+    };
 }
