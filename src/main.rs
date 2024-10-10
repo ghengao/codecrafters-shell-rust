@@ -1,12 +1,16 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
+use itertools::Itertools;
 
 // Parse user input command and return some value when command is not exit, or return error when user decide to exit
 fn run_command(input: &str) -> Result<(), i32>{
-    let splits = input.trim().split(' ');
-    match splits.take(1).nth(0) {
+    let mut splits = input.trim().split(' ');
+    match splits.nth(0) {
         Some("exit") => {
             return Err(0);
+        },
+        Some("echo") => {
+            println!("{}",splits.join(" "));
         },
         Some(cmd)  => {
             println!("{}: command not found", cmd);
