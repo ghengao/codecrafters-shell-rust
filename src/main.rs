@@ -61,6 +61,17 @@ impl Command for Type {
     }
 }
 
+#[derive(Clone)]
+struct Pwd;
+impl Command for Pwd {
+    fn execute(&self, _: Option<&str>) -> CommandResult {
+        if let Ok(s) = std::env::current_dir() {
+            println!("{}", s.display());
+        }
+        CommandResult::Success
+    }
+}
+
 // parse the input from user and output separately for the command and arguments
 // handles the empty input
 fn parse_command(s: &str) -> (Option<&str>, Option<&str>) {
@@ -84,9 +95,10 @@ impl Command for Executable {
         if args != None {
             r.arg(args.unwrap());
         }
-        let _ = r.stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit())
-        .status();
+        let _ = r
+            .stdout(std::process::Stdio::inherit())
+            .stderr(std::process::Stdio::inherit())
+            .status();
         CommandResult::Success
     }
 
@@ -108,6 +120,7 @@ fn get_command(s: &str) -> Option<Box<dyn Command>> {
         "exit" => Some(Box::new(Exit {})),
         "echo" => Some(Box::new(Echo {})),
         "type" => Some(Box::new(Type {})),
+        "pwd" => Some(Box::new(Pwd {})),
         _ => Some(Box::new(Executable(search_path(s)?))),
     }
 }
