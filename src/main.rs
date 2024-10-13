@@ -79,7 +79,14 @@ fn parse_command(s: &str) -> (Option<&str>, Option<&str>) {
 struct Executable(String);
 
 impl Command for Executable {
-    fn execute(&self, _: Option<&str>) -> CommandResult {
+    fn execute(&self, args: Option<&str>) -> CommandResult {
+        let mut r = std::process::Command::new(self.0.as_str());
+        if args != None {
+            r.arg(args.unwrap());
+        }
+        let _ = r.stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
+        .status();
         CommandResult::Success
     }
 
