@@ -40,19 +40,6 @@ impl Command for Echo {
 }
 
 #[derive(Clone)]
-struct Cat;
-
-impl Command for Cat {
-    fn execute(&self, _: Option<&str>) -> CommandResult {
-        CommandResult::Success
-    }
-
-    fn get_type(&self) -> &str {
-        "/bin/cat"
-    }
-}
-
-#[derive(Clone)]
 struct Type;
 
 impl Command for Type {
@@ -88,13 +75,33 @@ fn parse_command(s: &str) -> (Option<&str>, Option<&str>) {
     }
 }
 
+#[derive(Clone)]
+struct Executable(String);
+
+impl Command for Executable {
+    fn execute(&self, _: Option<&str>) -> CommandResult {
+        CommandResult::Success
+    }
+
+    fn get_type(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+// Given a cmd like `cat` try to find the executable in the env PATH
+fn search_path(cmd: &str) -> Option<String> {
+    std::env::split_paths(&std::env::var_os("PATH")?)
+        .map(|p| p.join(cmd))
+        .find(|p| p.is_file())
+        .and_then(|p| p.to_str().map(|x| x.to_string()))
+}
+
 fn get_command(s: &str) -> Option<Box<dyn Command>> {
     match s {
         "exit" => Some(Box::new(Exit {})),
         "echo" => Some(Box::new(Echo {})),
         "type" => Some(Box::new(Type {})),
-        "cat" => Some(Box::new(Cat {})),
-        _ => None,
+        _ => Some(Box::new(Executable(search_path(s)?))),
     }
 }
 
