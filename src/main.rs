@@ -1,4 +1,10 @@
-use std::io::{self, Write};
+use std::{
+    io::{self, Write},
+    path::PathBuf,
+};
+
+use anyhow::Result;
+use dirs::home_dir;
 
 enum CommandResult {
     Success,
@@ -72,6 +78,55 @@ impl Command for Pwd {
     }
 }
 
+#[derive(Clone)]
+struct Cd;
+impl Command for Cd {
+    fn execute(&self, args: Option<&str>) -> CommandResult {
+        if let Some(args) = args {
+            let _ = resolve_path(args).map(|p| {
+                std::env::set_current_dir(p)
+                    .map(|_| CommandResult::Success)
+                    .map_err(|_| {
+                        println!("cd: {}: No such file or directory", args);
+                        CommandResult::Fail
+                    })
+            });
+        }
+        CommandResult::Success
+    }
+}
+
+// Given path must be valid directory
+fn resolve_path(path: &str) -> Result<PathBuf> {
+    let mut tmp_path = PathBuf::from(path);
+    if path.starts_with("~") {
+        let home_path = home_dir().ok_or(anyhow::anyhow!("no home directory found"))?;
+        let home: &str = home_path
+            .to_str()
+            .ok_or(anyhow::anyhow!("cannot cast path string"))?;
+        let p = path.replace("~", home);
+        tmp_path = PathBuf::from(p);
+    }
+    if tmp_path.is_relative() {
+        tmp_path = std::env::current_dir()?.join(path);
+    }
+
+    let mut res_path = PathBuf::from("/");
+
+    for parts in tmp_path.iter().map(|s| s.to_str()) {
+        match parts {
+            Some("..") => {
+                res_path.pop();
+            }
+            Some(".") | None => {}
+            Some(s) => {
+                res_path.push(s);
+            }
+        }
+    }
+    Ok(res_path.into())
+}
+
 // parse the input from user and output separately for the command and arguments
 // handles the empty input
 fn parse_command(s: &str) -> (Option<&str>, Option<&str>) {
@@ -121,6 +176,7 @@ fn get_command(s: &str) -> Option<Box<dyn Command>> {
         "echo" => Some(Box::new(Echo {})),
         "type" => Some(Box::new(Type {})),
         "pwd" => Some(Box::new(Pwd {})),
+        "cd" => Some(Box::new(Cd {})),
         _ => Some(Box::new(Executable(search_path(s)?))),
     }
 }
